@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    .btn {
+      background-color: inherit;
+      padding: 14px 28px;
+      font-size: 16px;
+    }
+    .btn:hover {
+      background: #eee;
+    }
+  </style>
+</head>
+<body>
+  <button class="btn" onclick="moveForward()">Forwards</button>
+  <button class="btn" onclick="moveBackward()">Backwards</button>
+  <br>
+  <button class="btn" onclick="turnRight()">Right</button>
+  <button class="btn" onclick="turnLeft()">Left</button>
+  <br>
+  <button class="btn" onclick="stop()">Stop</button>
+  <button class="btn" onclick="IFR()">INFRARED</button>
+  <br>
+  <button class="btn" onclick="radio()">RADIO</button>
+  <button class="btn" onclick="ultra()">ULTRASOUND</button>
+  <br>
+  <button class="btn" onclick="magnetic()">MAGNETIC</button>
+  <br>
+  <p>MOTOR STATE: <span id="state">OFF</span></p>
+  <p>FREQUENCY INFRARED: <span id="frequency_ifr">N/A</span></p>
+  <p>FREQUENCY RADIO: <span id="frequency_radio">N/A</span></p>
+  <p>NAME: <span id="name">N/A</span></p>
+  <p>MAGNET: <span id="magnetism">N/A</span></p>
+
+  <script>
+    var xhttp = new XMLHttpRequest();
+    xhttp.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+        document.getElementById("state").innerHTML = this.responseText;
+        }
+    };
+    function moveForward() {
+        xhttp.open("GET", "forw");
+        xhttp.send();
+    }
+    function moveBackward() {
+        xhttp.open("GET", "back"); 
+        xhttp.send();
+    }
+    function stop() {
+        xhttp.open("GET", "stop");
+        xhttp.send();
+    }
+    function turnRight() {
+        xhttp.open("GET", "right"); 
+        xhttp.send();
+    }
+    function turnLeft() {
+        xhttp.open("GET", "left"); 
+        xhttp.send();
+    }
+    function IFR(){
+      //creating a new object called xhr1 
+      //object is used to interact with node.js - requests data 
+      var xhr1 = new XMLHttpRequest();
+      //anonymous functtion is called when readyState property of xhr1 changes
+      xhr1.onreadystatechange = function() {
+        //readyState checks if the request is complete
+        //status checks if request is successful 
+        if (this.readyState == 4 && this.status == 200) {
+          //updates the conent of that element with response from the server
+          //responseText is the response data as a string
+        document.getElementById("frequency_ifr").innerHTML = this.responseText;
+        }
+      };
+      xhr1.open("GET", "infrared", true);
+      xhr1.send();
+    }
+    function radio() {
+      var xhr2 = new XMLHttpRequest();
+      xhr2.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+        document.getElementById("frequency_radio").innerHTML = this.responseText;
+        }
+      };
+      xhr2.open("GET", "radio", true);
+      xhr2.send();
+    }
+    function ultra() {
+      var xhr3 = new XMLHttpRequest();
+      xhr3.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+        document.getElementById("name").innerHTML = this.responseText;
+        }
+      };
+      xhr3.open("GET", "ultrasound", true);
+      xhr3.send();
+    }
+    function magnetic() {
+      var xhr4 = new XMLHttpRequest();
+      xhr4.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+        document.getElementById("magnetism").innerHTML = this.responseText;
+        }
+      };
+      xhr4.open("GET", "magnetic", true);
+      xhr4.send();
+    }
+  </script>
+</body>
+</html>
