@@ -1,0 +1,32 @@
+const int signalPin = 2;  // Digital pin where the signal is connected
+volatile unsigned int pulseCount = 0;
+const unsigned long sampleInterval = 1000000; // Measurement interval in microseconds
+unsigned long startTime;
+
+void setup() {
+  Serial.begin(9600);  // Initialize serial communication
+  pinMode(signalPin, INPUT);
+  attachInterrupt(digitalPinToInterrupt(signalPin), countPulse, RISING); // Interrupt on rising edge
+  startTime = micros();
+}
+
+void loop() {
+  // Measurement interval
+  if (micros() - startTime >= sampleInterval) {
+    noInterrupts(); // Disable interrupts while calculating frequency
+    float frequency = (pulseCount / (sampleInterval / 1000000.0));
+    interrupts(); // Re-enable interrupts
+
+    Serial.print("Frequency: ");
+    Serial.print(frequency);
+    Serial.println(" Hz");
+
+    // Reset for the next interval
+    startTime = micros();
+    pulseCount = 0;
+  }
+}
+
+void countPulse() {
+  pulseCount++;
+}
