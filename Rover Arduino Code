@@ -1,0 +1,295 @@
+#define USE_WIFI_NINA         false
+#define USE_WIFI101           true
+#include <WiFiWebServer.h>
+#include <SPI.h>
+#include <WiFi101.h>
+
+const char ssid[] = "LEVINE 7388";
+const char pass[] = "40Jt798?";
+const int groupNumber = 8; 
+//DIRECTIONS - global variables
+#define motor1DirPin 6
+#define motor1PwmPin A1
+#define motor2DirPin 4
+#define motor2PwmPin A2
+
+WiFiWebServer server(80);
+
+String currentState = "OFF";
+
+//SENSORS - global variables
+//INFRARED
+const int signalPin = 2;
+volatile float pulseCount = 0;
+float previousMillis = 0;
+float interval = 0; 
+float frequency = 0;
+
+//RADIO PINS
+const int signalPin_R = 3;
+volatile float pulseCount_R = 0;
+float previousMillis_R = 0;
+float interval_R = 0; // Measurement interval in microseconds
+float frequency_R = 0;
+
+//ULTRASOUND PINS
+#define RX_PIN 1
+#define BAUD_RATE 600
+#define BIT_DURATION (1000000 / BAUD_RATE) // Duration of one bit in microseconds
+bool ultrabutt = false; //ultrasound button abbreviated
+
+//MAGNETIC PIN
+// Define the analog pin
+const int analogPin = A0;
+// Constants for voltage thresholds assuming a 5V reference and a 10-bit ADC (0-1023)
+const float highThreshold = 0.18; // 2.7V threshold for negative polarity
+
+//SENSORS call functions
+void IFR();
+
+void radio();
+
+void ultra();
+
+void magnetic();
+
+
+//Return the web page
+void handleRoot()
+{
+  server.send(200, F("text/html"), "Arduino");
+}
+
+//DIRECTION MOTOR CONTROL
+//responding to the state requested with a successful request (200)
+void turnLeft() {
+    Serial.println("TURNING LEFT");
+    digitalWrite(motor1DirPin, HIGH);
+    analogWrite(motor1PwmPin, 128);
+    digitalWrite(motor2DirPin, LOW);
+    analogWrite(motor2PwmPin, 128);
+    currentState = "LEFT";
+    server.send(200, F("text/plain"), currentState);
+}
+
+void turnRight() {
+    Serial.println("TURNING RIGHT");
+    digitalWrite(motor1DirPin, LOW);
+    analogWrite(motor1PwmPin, 128);
+    digitalWrite(motor2DirPin, HIGH);
+    analogWrite(motor2PwmPin, 128);
+    currentState = "RIGHT";
+    server.send(200, F("text/plain"), currentState);
+}
+
+void moveBackward() {
+    digitalWrite(motor1DirPin, HIGH);
+    analogWrite(motor1PwmPin, 255);
+    digitalWrite(motor2DirPin, HIGH);
+    analogWrite(motor2PwmPin, 255);
+    server.send(200, F("text/plain"), currentState);
+}
+
+void moveForward() {
+    digitalWrite(motor1DirPin, LOW);
+    analogWrite(motor1PwmPin, 255);
+    digitalWrite(motor2DirPin, LOW);
+    analogWrite(motor2PwmPin, 255);
+    server.send(200, F("text/plain"), currentState);
+}
+
+void stop() {
+    analogWrite(motor1PwmPin, 0);
+    analogWrite(motor2PwmPin, 0);
+    server.send(200, F("text/plain"), currentState);
+}
+
+//Generate a 404 response with details of the failed request
+void handleNotFound()
+{
+    String message = F("File Not Found\n\n"); 
+    message += F("URI: ");
+    message += server.uri();
+    message += F("\nMethod: ");
+    message += (server.method() == HTTP_GET) ? F("GET") : F("POST");
+    message += F("\nArguments: ");
+    message += server.args();
+    message += F("\n");
+    for (uint8_t i = 0; i < server.args(); i++)
+    {
+        message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
+    }
+    server.send(404, F("text/plain"), message);
+}
+
+void setup()
+{
+    //DIRECTIONS
+    pinMode(motor1DirPin, OUTPUT);
+    pinMode(motor1PwmPin, OUTPUT);
+    pinMode(motor2DirPin, OUTPUT);
+    pinMode(motor2PwmPin, OUTPUT);
+
+    Serial.begin(9600);
+
+    //IFR Sensors
+    pinMode(signalPin, INPUT);
+    attachInterrupt(digitalPinToInterrupt(signalPin), countPulse, RISING);
+
+    //RADIO Sensor
+    pinMode(signalPin_R, INPUT);
+    attachInterrupt(digitalPinToInterrupt(signalPin_R), radiocountPulse, RISING);
+
+    //Ultrasound Sensor
+    pinMode(RX_PIN, INPUT);
+    
+    //Wait 10s for the serial connection before proceeding
+    //This ensures you can see messages from startup() on the monitor
+    //Remove this for faster startup when the USB host isn't attached
+    while (!Serial && millis() < 10000);  
+
+    Serial.println(F("\nStarting Web Server"));
+
+    //Check WiFi shield is present
+    if (WiFi.status() == WL_NO_SHIELD)
+    {
+        Serial.println(F("WiFi shield not present"));
+        while (true);
+    }
+
+    //Configure the static IP address if group number is set
+    if (groupNumber)
+        WiFi.config(IPAddress(146,169,158,58));
+    
+    // attempt to connect to WiFi network
+    Serial.print(F("Connecting to WPA SSID: "));
+    Serial.println(ssid);
+    while (WiFi.begin(ssid, pass) != WL_CONNECTED)
+    {
+        delay(500);
+        Serial.print('.');
+    }
+
+    Serial.println("Connected to WiFi");
+    IPAddress ip = WiFi.localIP();
+    Serial.print("IP Address of arduino:");
+    Serial.println(ip);
+
+    //Register the callbacks to respond to HTTP requests
+    server.on(F("/"), handleRoot);
+    server.on(F("/forw"), moveForward);
+    server.on(F("/back"), moveBackward);
+    server.on(F("/stop"), stop);
+    server.on(F("/right"), turnRight);
+    server.on(F("/left"), turnLeft);
+    server.on(F("/infrared"), IFR);
+    server.on(F("/radio"), radio);
+    server.on(F("/ultrasound"), ultra);
+    server.on(F("/magnetic"), magnetic);
+    server.onNotFound(handleNotFound);
+    
+    server.begin();
+    
+    Serial.print(F("HTTP server started @ "));
+    Serial.println(static_cast<IPAddress>(WiFi.localIP()));
+}
+
+//Call the server polling function in the main loop
+void loop()
+{
+    server.handleClient();
+}
+
+void IFR(){
+    noInterrupts();
+    unsigned long currentMillis = millis();
+    interval = currentMillis - previousMillis;
+    previousMillis = currentMillis;
+    interval = interval/1000;
+    frequency = pulseCount / interval;
+    pulseCount = 0;
+    interrupts(); // Re-enable interrupts
+    Serial.print("Frequency: ");
+    Serial.println(frequency);
+    String freqString = "Frequency: " + String(frequency) + "Hz";
+    server.send(200, F("text/plain"), freqString);
+    countPulse();
+}
+
+void countPulse() {
+  pulseCount++;
+}
+
+void radio(){
+    noInterrupts();
+    unsigned long currentMillis_R = millis();
+    interval_R = currentMillis_R - previousMillis_R;
+    previousMillis_R = currentMillis_R;
+    interval_R = interval_R/1000;
+    frequency_R = pulseCount_R / interval_R;
+    pulseCount_R = 0;
+    interrupts(); // Re-enable interrupts
+    Serial.print("Frequency: ");
+    Serial.println(frequency_R);
+    String radioString = "Frequency: " + String(frequency_R) + "Hz";
+    server.send(200, F("text/plain"), radioString);
+
+    radiocountPulse();
+}
+
+void radiocountPulse() {
+  pulseCount_R++;
+}
+
+void ultra(){
+  ultrabutt = true;
+  static int index = 0; 
+  while (index < 4 && ultrabutt) {
+    static char buffer[4]; // Buffer to store received characters
+    if (digitalRead(RX_PIN) == LOW) { // Start bit detected
+      delayMicroseconds(BIT_DURATION / 2); // Wait to the middle of the start bit
+      char c = 0;
+      for (int i = 0; i < 8; i++) { // Read each bit
+        delayMicroseconds(BIT_DURATION);
+        c |= (digitalRead(RX_PIN) << i);
+      }
+      delayMicroseconds(BIT_DURATION); // Wait for stop bit
+      if (c == '#') { // If character is hash, reset buffer
+        index = 0;
+      } else {
+        buffer[index++] = c;
+        if (index == 3) { // Name received completely, print it
+          buffer[index] = '\0'; // Null terminate the string
+          Serial.print("Name: ");
+          Serial.println(buffer);
+          String nameString = String(buffer);
+          server.send(200, F("text/plain"), nameString);
+          ultrabutt = false;
+          index = 0; // Reset index for the next name
+        }
+      }
+    }
+  }
+}
+
+void magnetic(){
+    // Read the input on analog pin A0 (value between 0 and 1023)
+  int sensorValue = analogRead(analogPin);
+ 
+  // Calculate the voltage from the sensor value
+  // 5.0 is the reference voltage for the ADC
+  float voltage = sensorValue * (5.0 / 1023.0);
+ 
+  // Determine the polarity based on the voltage thresholds
+  if (voltage > highThreshold) {
+    Serial.println("DOWN");
+    String downString = "DOWN";
+    server.send(200, F("text/plain"), downString);
+  } else {
+    Serial.println("UP");
+    String upString = "UP";
+    server.send(200, F("text/plain"), upString);
+  }
+  // Add a small delay to avoid flooding the serial monitor
+  delay(500);
+}
