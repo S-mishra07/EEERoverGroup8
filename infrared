@@ -4,7 +4,7 @@ const unsigned long sampleInterval = 1000000; // Measurement interval in microse
 unsigned long startTime;
 
 void setup() {
-  Serial.begin(9600);  // Initialize serial communication
+  Serial.begin(9600);  // Initialise serial communication
   pinMode(signalPin, INPUT);
   attachInterrupt(digitalPinToInterrupt(signalPin), countPulse, RISING); // Interrupt on rising edge
   startTime = micros();
