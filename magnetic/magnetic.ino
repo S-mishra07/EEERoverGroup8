@@ -3,7 +3,7 @@ const int analogPin = A0;
 
 
 // Constants for voltage thresholds assuming a 5V reference and a 10-bit ADC (0-1023)
-const float highThreshold = 0.20; // 2.7V threshold for negative polarity
+const float highThreshold = 0.20; // 0.5V threshold for negative polarity
 
 
 void setup() {
@@ -18,7 +18,7 @@ void loop() {
  
   // Calculate the voltage from the sensor value
   // 5.0 is the reference voltage for the ADC
-  float voltage = sensorValue * (5.0 / 1023.0);
+  float voltage = sensorValue * (3.3 / 1023.0);
  
   // Determine the polarity based on the voltage thresholds
   if (voltage > highThreshold) {
