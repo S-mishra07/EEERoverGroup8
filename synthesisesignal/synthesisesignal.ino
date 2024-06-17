@@ -4,7 +4,7 @@ const unsigned long radiosampleInterval = 1000000; // Measurement interval in mi
 unsigned long radiostartTime;
 
 void setup() {
-  Serial.begin(9600);  // Initialize serial communication
+  Serial.begin(9600);  // Initialise serial communication
   pinMode(signalPin, INPUT);
   attachInterrupt(digitalPinToInterrupt(signalPin), radiocountPulse, RISING); // Interrupt on rising edge
   radiostartTime = micros();
