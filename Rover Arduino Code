@@ -4,9 +4,9 @@
 #include <SPI.h>
 #include <WiFi101.h>
 
-const char ssid[] = "LEVINE 7388";
-const char pass[] = "40Jt798?";
-const int groupNumber = 8; 
+const char ssid[] = "ET";
+const char pass[] = "mjcm6581";
+const int groupNumber = 0; 
 //DIRECTIONS - global variables
 #define motor1DirPin 6
 #define motor1PwmPin A1
@@ -16,6 +16,7 @@ const int groupNumber = 8;
 WiFiWebServer server(80);
 
 String currentState = "OFF";
+String currentSpecie = "N/A";
 
 //SENSORS - global variables
 //INFRARED
@@ -42,7 +43,7 @@ bool ultrabutt = false; //ultrasound button abbreviated
 // Define the analog pin
 const int analogPin = A0;
 // Constants for voltage thresholds assuming a 5V reference and a 10-bit ADC (0-1023)
-const float highThreshold = 0.18; // 2.7V threshold for negative polarity
+const float highThreshold = 0.5; // 2.7V threshold for negative polarity
 
 //SENSORS call functions
 void IFR();
@@ -65,9 +66,9 @@ void handleRoot()
 void turnLeft() {
     Serial.println("TURNING LEFT");
     digitalWrite(motor1DirPin, HIGH);
-    analogWrite(motor1PwmPin, 128);
+    analogWrite(motor1PwmPin, 75);
     digitalWrite(motor2DirPin, LOW);
-    analogWrite(motor2PwmPin, 128);
+    analogWrite(motor2PwmPin, 75);
     currentState = "LEFT";
     server.send(200, F("text/plain"), currentState);
 }
@@ -75,9 +76,9 @@ void turnLeft() {
 void turnRight() {
     Serial.println("TURNING RIGHT");
     digitalWrite(motor1DirPin, LOW);
-    analogWrite(motor1PwmPin, 128);
+    analogWrite(motor1PwmPin, 75);
     digitalWrite(motor2DirPin, HIGH);
-    analogWrite(motor2PwmPin, 128);
+    analogWrite(motor2PwmPin, 75);
     currentState = "RIGHT";
     server.send(200, F("text/plain"), currentState);
 }
@@ -124,74 +125,74 @@ void handleNotFound()
 
 void setup()
 {
-    //DIRECTIONS
-    pinMode(motor1DirPin, OUTPUT);
-    pinMode(motor1PwmPin, OUTPUT);
-    pinMode(motor2DirPin, OUTPUT);
-    pinMode(motor2PwmPin, OUTPUT);
+  //DIRECTIONS
+  pinMode(motor1DirPin, OUTPUT);
+  pinMode(motor1PwmPin, OUTPUT);
+  pinMode(motor2DirPin, OUTPUT);
+  pinMode(motor2PwmPin, OUTPUT);
 
-    Serial.begin(9600);
+  Serial.begin(9600);
 
-    //IFR Sensors
-    pinMode(signalPin, INPUT);
-    attachInterrupt(digitalPinToInterrupt(signalPin), countPulse, RISING);
+  //IFR Sensors
+  pinMode(signalPin, INPUT);
+  attachInterrupt(digitalPinToInterrupt(signalPin), countPulse, RISING);
 
-    //RADIO Sensor
-    pinMode(signalPin_R, INPUT);
-    attachInterrupt(digitalPinToInterrupt(signalPin_R), radiocountPulse, RISING);
+  //RADIO Sensor
+  pinMode(signalPin_R, INPUT);
+  attachInterrupt(digitalPinToInterrupt(signalPin_R), radiocountPulse, RISING);
 
-    //Ultrasound Sensor
-    pinMode(RX_PIN, INPUT);
-    
-    //Wait 10s for the serial connection before proceeding
-    //This ensures you can see messages from startup() on the monitor
-    //Remove this for faster startup when the USB host isn't attached
-    while (!Serial && millis() < 10000);  
+  //Ultrasound Sensor
+  pinMode(RX_PIN, INPUT);
+  
+  //Wait 10s for the serial connection before proceeding
+  //This ensures you can see messages from startup() on the monitor
+  //Remove this for faster startup when the USB host isn't attached
+  while (!Serial && millis() < 10000);  
 
-    Serial.println(F("\nStarting Web Server"));
+  Serial.println(F("\nStarting Web Server"));
 
-    //Check WiFi shield is present
-    if (WiFi.status() == WL_NO_SHIELD)
-    {
-        Serial.println(F("WiFi shield not present"));
-        while (true);
-    }
+  //Check WiFi shield is present
+  if (WiFi.status() == WL_NO_SHIELD)
+  {
+      Serial.println(F("WiFi shield not present"));
+      while (true);
+  }
 
-    //Configure the static IP address if group number is set
-    if (groupNumber)
-        WiFi.config(IPAddress(146,169,158,58));
-    
-    // attempt to connect to WiFi network
-    Serial.print(F("Connecting to WPA SSID: "));
-    Serial.println(ssid);
-    while (WiFi.begin(ssid, pass) != WL_CONNECTED)
-    {
-        delay(500);
-        Serial.print('.');
-    }
+  //Configure the static IP address if group number is set
+  if (groupNumber)
+      WiFi.config(IPAddress(192,168,174,211));
+  
+  // attempt to connect to WiFi network
+  Serial.print(F("Connecting to WPA SSID: "));
+  Serial.println(ssid);
+  while (WiFi.begin(ssid, pass) != WL_CONNECTED)
+  {
+      delay(500);
+      Serial.print('.');
+  }
 
-    Serial.println("Connected to WiFi");
-    IPAddress ip = WiFi.localIP();
-    Serial.print("IP Address of arduino:");
-    Serial.println(ip);
+  Serial.println("Connected to WiFi");
+  IPAddress ip = WiFi.localIP();
+  Serial.print("IP Address of arduino:");
+  Serial.println(ip);
 
-    //Register the callbacks to respond to HTTP requests
-    server.on(F("/"), handleRoot);
-    server.on(F("/forw"), moveForward);
-    server.on(F("/back"), moveBackward);
-    server.on(F("/stop"), stop);
-    server.on(F("/right"), turnRight);
-    server.on(F("/left"), turnLeft);
-    server.on(F("/infrared"), IFR);
-    server.on(F("/radio"), radio);
-    server.on(F("/ultrasound"), ultra);
-    server.on(F("/magnetic"), magnetic);
-    server.onNotFound(handleNotFound);
-    
-    server.begin();
-    
-    Serial.print(F("HTTP server started @ "));
-    Serial.println(static_cast<IPAddress>(WiFi.localIP()));
+  //Register the callbacks to respond to HTTP requests
+  server.on(F("/"), handleRoot);
+  server.on(F("/forw"), moveForward);
+  server.on(F("/back"), moveBackward);
+  server.on(F("/stop"), stop);
+  server.on(F("/right"), turnRight);
+  server.on(F("/left"), turnLeft);
+  server.on(F("/infrared"), IFR);
+  server.on(F("/radio"), radio);
+  server.on(F("/ultrasound"), ultra);
+  server.on(F("/magnetic"), magnetic);
+  server.onNotFound(handleNotFound);
+  
+  server.begin();
+  
+  Serial.print(F("HTTP server started @ "));
+  Serial.println(static_cast<IPAddress>(WiFi.localIP()));
 }
 
 //Call the server polling function in the main loop
@@ -213,6 +214,14 @@ void IFR(){
     Serial.println(frequency);
     String freqString = "Frequency: " + String(frequency) + "Hz";
     server.send(200, F("text/plain"), freqString);
+    if(frequency >= 560 && frequency <= 580){
+      Serial.println("Abronia");
+      server.send(200, F("text/plain"), "Abronia");
+    }
+    else if(frequency >= 340 && frequency <= 360){
+      Serial.println("Dixonius");
+      server.send(200, F("text/plain"), "Dixonius");
+    }
     countPulse();
 }
 
@@ -233,7 +242,14 @@ void radio(){
     Serial.println(frequency_R);
     String radioString = "Frequency: " + String(frequency_R) + "Hz";
     server.send(200, F("text/plain"), radioString);
-
+    if(frequency_R >= 110 && frequency_R <= 130){
+      Serial.println("Elgaria");
+      server.send(200, F("text/plain"), "Elgaria");
+    }
+    else if(frequency_R >= 190 && frequency_R <= 210){
+      Serial.println("Cophotis");
+      server.send(200, F("text/plain"), "Cophotis");
+    }
     radiocountPulse();
 }
 
@@ -282,13 +298,13 @@ void magnetic(){
  
   // Determine the polarity based on the voltage thresholds
   if (voltage > highThreshold) {
-    Serial.println("DOWN");
-    String downString = "DOWN";
-    server.send(200, F("text/plain"), downString);
-  } else {
     Serial.println("UP");
     String upString = "UP";
     server.send(200, F("text/plain"), upString);
+  } else {
+    Serial.println("DOWN");
+    String downString = "DOWN";
+    server.send(200, F("text/plain"), downString);
   }
   // Add a small delay to avoid flooding the serial monitor
   delay(500);
