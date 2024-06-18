@@ -1,37 +1,107 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <style>
-    .btn {
-      background-color: inherit;
-      padding: 14px 28px;
-      font-size: 16px;
-    }
-    .btn:hover {
-      background: #eee;
-    }
-  </style>
-</head>
-<body>
-  <button class="btn" onclick="moveForward()">Forwards</button>
-  <button class="btn" onclick="moveBackward()">Backwards</button>
-  <br>
-  <button class="btn" onclick="turnRight()">Right</button>
-  <button class="btn" onclick="turnLeft()">Left</button>
-  <br>
-  <button class="btn" onclick="stop()">Stop</button>
-  <button class="btn" onclick="IFR()">INFRARED</button>
-  <br>
-  <button class="btn" onclick="radio()">RADIO</button>
-  <button class="btn" onclick="ultra()">ULTRASOUND</button>
-  <br>
-  <button class="btn" onclick="magnetic()">MAGNETIC</button>
-  <br>
-  <p>MOTOR STATE: <span id="state">OFF</span></p>
-  <p>FREQUENCY INFRARED: <span id="frequency_ifr">N/A</span></p>
-  <p>FREQUENCY RADIO: <span id="frequency_radio">N/A</span></p>
-  <p>NAME: <span id="name">N/A</span></p>
-  <p>MAGNET: <span id="magnetism">N/A</span></p>
+  <head>
+    <style>
+      .btn {
+        background-color: #04AA6D;
+        border: none;
+        color: white;
+        padding: 20px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        margin: 4px 2px;
+        font-size: 16px;
+        border-radius: 12px;
+      }
+      .btn:hover {
+        background: #eee;
+      }
+      table, th, td {
+        border: 1px solid black;
+        border-radius: 20px;
+      }
+      .center {
+        margin-left: auto;
+        margin-right: auto;
+      }
+      .arrow {
+        border: solid black;
+        border-width: 0 6px 6px 0;
+        display: incline-block;
+        padding: 6px;
+      }
+      .right {
+        text-align: center;
+        transform: rotate(-45deg);
+        -webkit-trasnform: rotate(-45deg);
+      }
+      .left {
+        text-align: center;
+        transform: rotate(135deg);
+        -webkit-trasnform: rotate(135deg);
+      }
+      .up {
+        text-align: center;
+        transform: rotate(-135deg);
+        -webkit-trasnform: rotate(-135deg);
+      }
+      .down {
+        text-align: center;
+        transform: rotate(45deg);
+        -webkit-trasnform: rotate(45deg);
+      }
+      div {
+        margin:auto;
+        width:200px;
+        height:128px;
+        position:relative;
+      }
+      img {
+        width: 200px;
+        position: absolute;
+        bottom: 0;
+        left: 50px;
+      }
+    </style>
+  </head>
+  <body>
+    <button class="arrow up" id="arrowUpButton" onclick="moveForward()"></button>
+    <br>
+    <button class="arrow left" id="arrowLeftButton" onclick="turnLeft()"></button>
+    <button class="arrow right" id="arrowRightButton" onclick="turnRight()"></button>
+    <br>
+    <button class="arrow down" id="arrowDownButton" onclick="moveBackward()"></button>
+    <br>
+    <button class="btn" onclick="IFR()">INFRARED</button>
+    <button class="btn" onclick="magnetic()">MAGNETIC</button>
+    <br>
+    <button class="btn" onclick="radio()">RADIO</button>
+    <button class="btn" onclick="ultra()">ULTRASOUND</button>
+    <br>
+    <button id="spaceButton" onclick="stop()"></button>
+    <button class="btn" onclick="stop()">EMERGENCY STOP BUTTON</button>
+    <br>
+
+    <table id="Sensors" style="width:1" class="center">
+      <tr>
+        <th>Infrared</th>
+        <th>Radio</th>
+        <th>Ultrasound</th>
+        <th>Magnetism</th>
+      </tr>
+      <tr>
+        <td><span id="frequency_ifr">N/A</span></td>
+        <td><span id="frequency_radio">N/A</span></td>
+        <td><span id="name">N/A</span></td>
+        <td><span id="magnetism">N/A</span></td>
+      </tr>
+    </table>
+    <button onclick = "save()" class="center">SAVE</button>
+    <div>
+      <img src="species.jpg" width="200" height="128">
+    </div>
+  </body>
 
   <script>
     var xhttp = new XMLHttpRequest();
@@ -107,6 +177,48 @@
       xhr4.open("GET", "magnetic", true);
       xhr4.send();
     }
+    function save(){
+      var Table = document.getElementById("Sensors");
+      var newRow = Table.insertRow(1);
+      var newIR = newRow.insertCell();
+      var newRadio = newRow.insertCell();
+      var newU = newRow.insertCell();
+      var newMag = newRow.insertCell();
+
+      var newIRVal = document.getElementById("frequency_ifr").innerHTML;
+      var newRadioVal = document.getElementById("frequency_radio").innerHTML;
+      var newUltrasoundVal = document.getElementById("name").innerHTML;
+      var newMagnetismVal = document.getElementById("magnetism").innerHTML;
+
+      newIR.innerHTML = newIRVal;
+      newRadio.innerHTML = newRadioVal;
+      newU.innerHTML = newUltrasoundVal;
+      newMag.innerHTML = newMagnetismVal;
+    }
+    const buttonF = document.getElementById('arrowUpButton');
+    const buttonB = document.getElementById('arrowDownButton');
+    const buttonL = document.getElementById('arrowLeftButton');
+    const buttonR = document.getElementById('arrowRightButton');
+    const buttonSTOP = document.getElementById('spaceButton');
+
+    document.addEventListener('keydown', function(event) {
+      if (event.key === 'ArrowUp') {
+        buttonF.click();
+      }
+      else if (event.key === 'ArrowDown') {
+        buttonB.click();
+      }
+      else if (event.key === 'ArrowLeft') {
+        buttonL.click();
+      }
+      else if (event.key === 'ArrowRight') {
+        buttonR.click();
+      }
+      else if(event.key === ' ') {
+        event.preventDefault();
+        buttonSTOP.click();
+      }
+    });
+
   </script>
-</body>
 </html>
