@@ -7,7 +7,7 @@ const path = require('path');
 
 const app = express();
 //Arduino IP address and port 
-const ARDUINO_IP = '146.169.158.58'; 
+const ARDUINO_IP = '192.168.174.60'; 
 const ARDUINO_PORT = 80;
 
 //storing the current state 
@@ -122,6 +122,7 @@ app.get('/left', async (req, res) => {
   const result = await sendCommand('left');
   res.send(result);
 });
+
 
 //SENSORS
 //IFR
